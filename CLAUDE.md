@@ -16,7 +16,9 @@ To preview: open `index.html` directly in a browser, or `python3 -m http.server`
 
 There is no separate data source — each supply item **is** a `<tr>` in one of two `<tbody>`s (one `.listcard` section per list: "Elementary & Middle School" and "Preschool & VPK"). The item's line-item cost is stored on the row as `data-line="5.98"`, and each row has a checkbox with a unique id (`i0`, `i1`, …). To add, remove, or reprice an item, edit its `<tr>` markup directly.
 
-The JS (`recompute`, `onCheck`, `resetAll`) reads the DOM as its source of truth: it sums `data-line` over checked rows, counts items, and updates the sticky summary bar and each section's "N / M collected" counter. State is in-memory only — nothing is persisted, so a refresh clears all checkmarks.
+The JS (`recompute`, `onCheck`, `resetAll`) reads the DOM as its source of truth: it sums `data-line` over checked rows, counts items, and updates the sticky summary bar and each section's "N / M collected" counter.
+
+Checked state is persisted to `localStorage` under the key `sssa-supply-checklist-v1` as a JSON array of checked checkbox ids. `saveState()` runs on every check and on reset; `loadState()` restores checks on page load (before the initial `recompute()`), guarded by try/catch so private-mode / disabled storage degrades to in-memory only. This is per-browser/per-device — it does not sync across browsers or devices (that would require a backend the static site doesn't have). Bumping the row ids or the storage key version invalidates saved state.
 
 ### Values that must be kept consistent by hand
 
