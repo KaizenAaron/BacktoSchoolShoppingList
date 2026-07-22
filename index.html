@@ -720,8 +720,25 @@
 
 <script>
   var GRAND = 330.11;
+  var STORE_KEY = 'sssa-supply-checklist-v1';
   function fmt(n){return '$'+n.toFixed(2);}
-  function onCheck(cb){ cb.closest('tr').classList.toggle('done', cb.checked); recompute(); }
+  function saveState(){
+    try{
+      var ids=[];
+      document.querySelectorAll('tbody input:checked').forEach(function(c){ids.push(c.id);});
+      localStorage.setItem(STORE_KEY, JSON.stringify(ids));
+    }catch(e){/* storage unavailable (private mode / disabled); state stays in-memory */}
+  }
+  function loadState(){
+    var ids;
+    try{ ids=JSON.parse(localStorage.getItem(STORE_KEY)); }catch(e){ ids=null; }
+    if(!Array.isArray(ids)) return;
+    ids.forEach(function(id){
+      var cb=document.getElementById(id);
+      if(cb){ cb.checked=true; cb.closest('tr').classList.add('done'); }
+    });
+  }
+  function onCheck(cb){ cb.closest('tr').classList.toggle('done', cb.checked); saveState(); recompute(); }
   function recompute(){
     var collected=0, count=0, total=0;
     document.querySelectorAll('tbody tr').forEach(function(tr){
@@ -740,7 +757,8 @@
       cnt.textContent=done+' / '+trs.length+' collected';
     });
   }
-  function resetAll(){ document.querySelectorAll('tbody input').forEach(function(c){c.checked=false;c.closest('tr').classList.remove('done');}); recompute(); }
+  function resetAll(){ document.querySelectorAll('tbody input').forEach(function(c){c.checked=false;c.closest('tr').classList.remove('done');}); saveState(); recompute(); }
+  loadState();
   recompute();
 </script>
 </body>
