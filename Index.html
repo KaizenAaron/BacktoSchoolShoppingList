@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sunshine State Academy — Supply Shopping List</title>
+<style>
+  :root{
+    --navy:#1f3864; --navy2:#2c4a7c; --ink:#1a2230; --muted:#667085; --line:#e3e8ef;
+    --bg:#f5f7fb; --card:#ffffff; --green:#1a7f4b; --greenbg:#e8f6ee; --accent:#c0392b;
+    --elem:#1f3864; --vpk:#0f766e; --chip:#eef2f9;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:15px;line-height:1.45;-webkit-text-size-adjust:100%}
+  .wrap{max-width:1120px;margin:0 auto;padding:24px 18px 60px}
+  header.top{border-bottom:3px solid var(--navy);padding-bottom:16px;margin-bottom:8px}
+  h1{margin:0 0 4px;font-size:26px;color:var(--navy);letter-spacing:-.01em}
+  .sub{color:var(--muted);font-size:13px}
+  .notes-top{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:18px 0;font-size:13.5px;color:#374151}
+  .notes-top b{color:var(--navy)}
+  .notes-top p{margin:0 0 8px}
+  .notes-top p:last-child{margin:0}
+
+  /* sticky summary bar */
+  .summary{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);
+    border:1px solid var(--line);border-radius:14px;padding:12px 16px;margin:14px 0 22px;
+    display:flex;flex-wrap:wrap;gap:14px 22px;align-items:center;box-shadow:0 2px 10px rgba(20,30,60,.05)}
+  .stat{display:flex;flex-direction:column;line-height:1.15}
+  .stat .k{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+  .stat .v{font-size:19px;font-weight:700;color:var(--navy)}
+  .stat .v.acc{color:var(--accent)}
+  .stat .v.grn{color:var(--green)}
+  .bar{flex:1 1 180px;min-width:150px;height:10px;background:#e9edf5;border-radius:20px;overflow:hidden}
+  .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--vpk),var(--navy));transition:width .3s ease}
+  .btns{display:flex;gap:8px;margin-left:auto}
+  button{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:#fff;color:var(--navy);
+    padding:8px 12px;border-radius:9px;cursor:pointer;transition:.15s}
+  button:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+  .listcard{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:26px;box-shadow:0 1px 3px rgba(20,30,60,.04)}
+  .lhead{padding:14px 18px;color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+  .lhead.elem{background:linear-gradient(120deg,var(--elem),#33528a)}
+  .lhead.vpk{background:linear-gradient(120deg,var(--vpk),#12a394)}
+  .lhead h2{margin:0;font-size:18px}
+  .lmeta{display:flex;gap:16px;align-items:center;font-size:13px}
+  .lmeta .cnt{opacity:.9}
+  .lmeta .lsub{font-weight:700;background:rgba(255,255,255,.18);padding:4px 10px;border-radius:20px}
+
+  .tablewrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:720px}
+  thead th{background:#f1f4fa;color:var(--navy);text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;
+    padding:9px 10px;border-bottom:1px solid var(--line);position:sticky;top:0}
+  tbody td{padding:9px 10px;border-bottom:1px solid #eef1f6;vertical-align:top}
+  tbody tr:nth-child(even){background:#fafbfe}
+  tbody tr.done{background:var(--greenbg) !important}
+  tbody tr.done .item label{text-decoration:line-through;color:#8a93a3}
+  tbody tr.done .prod,tbody tr.done .qty,tbody tr.done .sect,tbody tr.done .num{color:#9aa3b2}
+  td.chk,th.chk{width:34px;text-align:center;padding-left:12px}
+  input[type=checkbox]{width:18px;height:18px;accent-color:var(--green);cursor:pointer}
+  td.item label{font-weight:600;cursor:pointer}
+  td.qty{white-space:nowrap;color:#475467}
+  td.prod{color:#33405a}
+  td.prod .note{color:#8a93a3;font-style:italic;font-size:12px}
+  td.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+  td.line{font-weight:700;color:var(--navy)}
+  td.sect{color:#5a677d;font-size:12.5px}
+
+  .grand{background:linear-gradient(120deg,#111c33,#24406e);color:#fff;border-radius:14px;padding:20px 22px;margin:8px 0 26px;
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+  .grand .lab{font-size:13px;opacity:.85;text-transform:uppercase;letter-spacing:.05em}
+  .grand .big{font-size:30px;font-weight:800;letter-spacing:-.02em}
+  .grand .split{font-size:12.5px;opacity:.8}
+
+  .foot{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;font-size:13px;color:#374151}
+  .foot h3{margin:0 0 10px;color:var(--navy);font-size:15px}
+  .foot ul{margin:0;padding-left:18px}
+  .foot li{margin-bottom:6px}
+  .foot .fine{margin-top:12px;color:var(--muted);font-size:12px}
+  @media (max-width:640px){
+    h1{font-size:21px}.grand .big{font-size:24px}
+    .summary{gap:10px 16px}.stat .v{font-size:16px}
+  }
+  @media print{
+    body{background:#fff}.summary,.btns{display:none}
+    .listcard,.foot,.grand{break-inside:avoid;box-shadow:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Sunshine State Academy — School Supply Shopping List</h1>
+    <div class="sub">Priced at <b>Target · Aventura</b> (21265 Biscayne Blvd) · captured July 22, 2026 · tap a box to cross items off as you shop</div>
+  </header>
+
+  <div class="notes-top">
+    <p><b>Two lists, kept separate.</b> Prices reflect the Aventura store and include current sale prices where Target is running one, so they may change. Where a required size or count isn’t sold, the closest match is used and flagged in italics.</p>
+    <p><b>About “Store section.”</b> Target’s site shows stock but doesn’t publish exact aisle numbers to shoppers who aren’t signed in, so this column lists each item’s Target department — how the store is organized and how staff will point you. For the exact aisle at this store, open the item in the Target app with Aventura selected; it shows the aisle on the in-store map.</p>
+  </div>
+
+  <div class="summary">
+    <div class="stat"><span class="k">Collected</span><span class="v grn" id="sCollected">$0.00</span></div>
+    <div class="stat"><span class="k">Remaining</span><span class="v acc" id="sRemaining">$330.11</span></div>
+    <div class="stat"><span class="k">Items</span><span class="v" id="sItems">0 / 63</span></div>
+    <div class="bar"><i id="sBar"></i></div>
+    <div class="btns"><button onclick="window.print()">Print</button><button onclick="resetAll()">Reset</button></div>
+  </div>
+
+  <section class="listcard">
+    <div class="lhead elem">
+      <h2>Elementary &amp; Middle School</h2>
+      <div class="lmeta"><span class="cnt" data-total="30">0 / 30 collected</span><span class="lsub">Subtotal $134.31</span></div>
+    </div>
+    <div class="tablewrap">
+    <table>
+      <thead><tr><th class="chk"></th><th>Item</th><th>Qty</th><th>Suggested Target product</th><th class="num">Unit</th><th class="num">Line</th><th>Store section</th></tr></thead>
+      <tbody><tr data-line="5.98">
+      <td class="chk"><input type="checkbox" id="i0" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i0">Pencil #2</label></td>
+      <td class="qty">12-ct × 2 packs</td>
+      <td class="prod">Ticonderoga 12ct Pencils, Yellow</td>
+      <td class="num">$2.99</td>
+      <td class="num line">$5.98</td>
+      <td class="sect">School &amp; Office Supplies – Pencils</td>
+    </tr>
+<tr data-line="2.5">
+      <td class="chk"><input type="checkbox" id="i1" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i1">Colored Pencils</label></td>
+      <td class="qty">24-ct × 1 pack</td>
+      <td class="prod">Mondo Llama 24ct Colored Pencils</td>
+      <td class="num">$2.50</td>
+      <td class="num line">$2.50</td>
+      <td class="sect">School &amp; Office Supplies – Art</td>
+    </tr>
+<tr data-line="0.5">
+      <td class="chk"><input type="checkbox" id="i2" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i2">Crayons</label></td>
+      <td class="qty">24-ct × 1 pack</td>
+      <td class="prod">Crayola 24ct Crayons</td>
+      <td class="num">$0.50</td>
+      <td class="num line">$0.50</td>
+      <td class="sect">School &amp; Office Supplies – Crayons</td>
+    </tr>
+<tr data-line="1.98">
+      <td class="chk"><input type="checkbox" id="i3" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i3">Markers</label></td>
+      <td class="qty">10-ct × 2 packs</td>
+      <td class="prod">Crayola 10ct Broad Line Markers</td>
+      <td class="num">$0.99</td>
+      <td class="num line">$1.98</td>
+      <td class="sect">School &amp; Office Supplies – Markers</td>
+    </tr>
+<tr data-line="1.99">
+      <td class="chk"><input type="checkbox" id="i4" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i4">Highlighters</label></td>
+      <td class="qty">2-ct assorted</td>
+      <td class="prod">up&amp;up 4pk Highlighters<span class="note"> — No 2ct sold; smallest is 4ct</span></td>
+      <td class="num">$1.99</td>
+      <td class="num line">$1.99</td>
+      <td class="sect">School &amp; Office Supplies – Pens/Highlighters</td>
+    </tr>
+<tr data-line="0.99">
+      <td class="chk"><input type="checkbox" id="i5" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i5">Pencil Box / Case</label></td>
+      <td class="qty">1</td>
+      <td class="prod">Sterilite Flat Top Pencil Box, Clear</td>
+      <td class="num">$0.99</td>
+      <td class="num line">$0.99</td>
+      <td class="sect">School &amp; Office Supplies – Storage</td>
+    </tr>
+<tr data-line="1.49">
+      <td class="chk"><input type="checkbox" id="i6" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i6">Pink Erasers</label></td>
+      <td class="qty">4-ct</td>
+      <td class="prod">Paper Mate Pink Pearl Erasers 3pk<span class="note"> — Sold in 3ct; grab 2</span></td>
+      <td class="num">$1.49</td>
+      <td class="num line">$1.49</td>
+      <td class="sect">School &amp; Office Supplies – Writing</td>
+    </tr>
+<tr data-line="1.59">
+      <td class="chk"><input type="checkbox" id="i7" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i7">Blunt Tip Scissors</label></td>
+      <td class="qty">1 pair</td>
+      <td class="prod">Fiskars 5" Blunt Tip Scissors</td>
+      <td class="num">$1.59</td>
+      <td class="num line">$1.59</td>
+      <td class="sect">School &amp; Office Supplies – Cutting</td>
+    </tr>
+<tr data-line="1.56">
+      <td class="chk"><input type="checkbox" id="i8" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i8">Wide Ruled Composition Book</label></td>
+      <td class="qty">4-ct</td>
+      <td class="prod">Composition Book Wide Ruled (Dealworthy)</td>
+      <td class="num">$0.39</td>
+      <td class="num line">$1.56</td>
+      <td class="sect">School &amp; Office Supplies – Notebooks</td>
+    </tr>
+<tr data-line="0.89">
+      <td class="chk"><input type="checkbox" id="i9" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i9">Wide Ruled Loose-Leaf Paper</label></td>
+      <td class="qty">1 pack</td>
+      <td class="prod">175ct Wide Ruled Filler Paper (Dealworthy)</td>
+      <td class="num">$0.89</td>
+      <td class="num line">$0.89</td>
+      <td class="sect">School &amp; Office Supplies – Filler Paper</td>
+    </tr>
+<tr data-line="0.89">
+      <td class="chk"><input type="checkbox" id="i10" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i10">12-Inch Ruler</label></td>
+      <td class="qty">1</td>
+      <td class="prod">up&amp;up 12" Wood Ruler</td>
+      <td class="num">$0.89</td>
+      <td class="num line">$0.89</td>
+      <td class="sect">School &amp; Office Supplies – Measuring</td>
+    </tr>
+<tr data-line="3.98">
+      <td class="chk"><input type="checkbox" id="i11" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i11">Liquid Glue, Washable, 7.6 oz</label></td>
+      <td class="qty">2-ct</td>
+      <td class="prod">Elmer's 7.625oz Washable School Glue</td>
+      <td class="num">$1.99</td>
+      <td class="num line">$3.98</td>
+      <td class="sect">School &amp; Office Supplies – Adhesives</td>
+    </tr>
+<tr data-line="1">
+      <td class="chk"><input type="checkbox" id="i12" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i12">Glue Stick</label></td>
+      <td class="qty">8-ct</td>
+      <td class="prod">up&amp;up Glue Stick 2ct (buy 4 = 8)</td>
+      <td class="num">$0.25</td>
+      <td class="num line">$1.00</td>
+      <td class="sect">School &amp; Office Supplies – Adhesives</td>
+    </tr>
+<tr data-line="4.49">
+      <td class="chk"><input type="checkbox" id="i13" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i13">Dry Erase Markers</label></td>
+      <td class="qty">4-ct × 1 pack</td>
+      <td class="prod">Expo 4pk Dry Erase Markers, Chisel</td>
+      <td class="num">$4.49</td>
+      <td class="num line">$4.49</td>
+      <td class="sect">School &amp; Office Supplies – Dry Erase</td>
+    </tr>
+<tr data-line="2.39">
+      <td class="chk"><input type="checkbox" id="i14" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i14">Watercolor Paint</label></td>
+      <td class="qty">1</td>
+      <td class="prod">Crayola 8ct Washable Watercolors w/ Brush</td>
+      <td class="num">$2.39</td>
+      <td class="num line">$2.39</td>
+      <td class="sect">Arts &amp; Crafts – Kids Paint</td>
+    </tr>
+<tr data-line="0.98">
+      <td class="chk"><input type="checkbox" id="i15" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i15">Handheld Pencil Sharpener</label></td>
+      <td class="qty">2-ct</td>
+      <td class="prod">up&amp;up 2-Hole Pencil Sharpener</td>
+      <td class="num">$0.49</td>
+      <td class="num line">$0.98</td>
+      <td class="sect">School &amp; Office Supplies – Writing</td>
+    </tr>
+<tr data-line="4.99">
+      <td class="chk"><input type="checkbox" id="i16" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i16">White 1.5-inch Binder</label></td>
+      <td class="qty">1</td>
+      <td class="prod">up&amp;up 1.5" Clear View 3-Ring Binder</td>
+      <td class="num">$4.99</td>
+      <td class="num line">$4.99</td>
+      <td class="sect">School &amp; Office Supplies – Binders</td>
+    </tr>
+<tr data-line="3.75">
+      <td class="chk"><input type="checkbox" id="i17" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i17">Assorted Construction Paper</label></td>
+      <td class="qty">1 pack</td>
+      <td class="prod">Mondo Llama 9"x12" Construction Paper</td>
+      <td class="num">$3.75</td>
+      <td class="num line">$3.75</td>
+      <td class="sect">Arts &amp; Crafts – Craft Paper</td>
+    </tr>
+<tr data-line="4.49">
+      <td class="chk"><input type="checkbox" id="i18" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i18">White Cardstock Paper</label></td>
+      <td class="qty">1 pack</td>
+      <td class="prod">Astrodesigns 50-Sheet Bright White Cardstock</td>
+      <td class="num">$4.49</td>
+      <td class="num line">$4.49</td>
+      <td class="sect">Arts &amp; Crafts – Craft Paper</td>
+    </tr>
+<tr data-line="5.59">
+      <td class="chk"><input type="checkbox" id="i19" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i19">Assorted Cardstock Paper</label></td>
+      <td class="qty">1 pack</td>
+      <td class="prod">Astrobrights 50-Sheet Primary Cardstock</td>
+      <td class="num">$5.59</td>
+      <td class="num line">$5.59</td>
+      <td class="sect">Arts &amp; Crafts – Craft Paper</td>
+    </tr>
+<tr data-line="5.79">
+      <td class="chk"><input type="checkbox" id="i20" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i20">Copy / Printer Paper</label></td>
+      <td class="qty">1 pack</td>
+      <td class="prod">up&amp;up 500ct Letter Printer Paper</td>
+      <td class="num">$5.79</td>
+      <td class="num line">$5.79</td>
+      <td class="sect">School &amp; Office Supplies – Printer Paper</td>
+    </tr>
+<tr data-line="4.29">
+      <td class="chk"><input type="checkbox" id="i21" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i21">Page Sheet Protectors</label></td>
+      <td class="qty">25-ct</td>
+      <td class="prod">up&amp;up 25ct Heavy-Duty Sheet Protectors</td>
+      <td class="num">$4.29</td>
+      <td class="num line">$4.29</td>
+      <td class="sect">School &amp; Office Supplies – Binder Accessories</td>
+    </tr>
+<tr data-line="6.59">
+      <td class="chk"><input type="checkbox" id="i22" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i22">Play-Doh Assorted Colors</label></td>
+      <td class="qty">1 set</td>
+      <td class="prod">Play-Doh Party Bag Multipack, 15pc</td>
+      <td class="num">$6.59</td>
+      <td class="num line">$6.59</td>
+      <td class="sect">Toys – Arts &amp; Crafts</td>
+    </tr>
+<tr data-line="19.99">
+      <td class="chk"><input type="checkbox" id="i23" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i23">24-Color Tempera Paint Sticks</label></td>
+      <td class="qty">1 pack</td>
+      <td class="prod">KINGART Tempera Paint Sticks, 24 Colors</td>
+      <td class="num">$19.99</td>
+      <td class="num line">$19.99</td>
+      <td class="sect">Arts &amp; Crafts – Kids Paint</td>
+    </tr>
+<tr data-line="5">
+      <td class="chk"><input type="checkbox" id="i24" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i24">Reusable Water Bottle</label></td>
+      <td class="qty">1</td>
+      <td class="prod">All In Motion 16oz Stainless Steel Bottle</td>
+      <td class="num">$5.00</td>
+      <td class="num line">$5.00</td>
+      <td class="sect">Kitchen / Dining – Drinkware</td>
+    </tr>
+<tr data-line="11.99">
+      <td class="chk"><input type="checkbox" id="i25" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i25">Clear School Backpack</label></td>
+      <td class="qty">1</td>
+      <td class="prod">Locker Club Clear 17" Backpack</td>
+      <td class="num">$11.99</td>
+      <td class="num line">$11.99</td>
+      <td class="sect">Bags &amp; Luggage – Backpacks</td>
+    </tr>
+<tr data-line="10">
+      <td class="chk"><input type="checkbox" id="i26" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i26">Headphones (wired)</label></td>
+      <td class="qty">1</td>
+      <td class="prod">heyday Kids' Wired Headphones</td>
+      <td class="num">$10.00</td>
+      <td class="num line">$10.00</td>
+      <td class="sect">Electronics – Headphones</td>
+    </tr>
+<tr data-line="11.07">
+      <td class="chk"><input type="checkbox" id="i27" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i27">Flushable Wipes</label></td>
+      <td class="qty">3 packs</td>
+      <td class="prod">up&amp;up Flushable Cleansing Wipes<span class="note"> — Entry price/pack</span></td>
+      <td class="num">$3.69</td>
+      <td class="num line">$11.07</td>
+      <td class="sect">Household Essentials – Personal Care</td>
+    </tr>
+<tr data-line="5.98">
+      <td class="chk"><input type="checkbox" id="i28" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i28">Disinfecting Wipes</label></td>
+      <td class="qty">2 packs</td>
+      <td class="prod">up&amp;up Disinfecting Wipes, 75ct</td>
+      <td class="num">$2.99</td>
+      <td class="num line">$5.98</td>
+      <td class="sect">Household Essentials – Cleaning</td>
+    </tr>
+<tr data-line="1.59">
+      <td class="chk"><input type="checkbox" id="i29" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i29">Facial Tissue Box</label></td>
+      <td class="qty">1 box</td>
+      <td class="prod">up&amp;up Ultra Soft 3-Ply Facial Tissue</td>
+      <td class="num">$1.59</td>
+      <td class="num line">$1.59</td>
+      <td class="sect">Household Essentials – Paper Goods</td>
+    </tr></tbody>
+    </table>
+    </div>
+  </section>
+  <section class="listcard">
+    <div class="lhead vpk">
+      <h2>Preschool &amp; VPK</h2>
+      <div class="lmeta"><span class="cnt" data-total="33">0 / 33 collected</span><span class="lsub">Subtotal $195.80</span></div>
+    </div>
+    <div class="tablewrap">
+    <table>
+      <thead><tr><th class="chk"></th><th>Item</th><th>Qty</th><th>Suggested Target product</th><th class="num">Unit</th><th class="num">Line</th><th>Store section</th></tr></thead>
+      <tbody><tr data-line="2.99">
+      <td class="chk"><input type="checkbox" id="i30" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i30">Pencil #2</label></td>
+      <td class="qty">12-ct × 1 pack</td>
+      <td class="prod">Ticonderoga 12ct Pencils, Yellow</td>
+      <td class="num">$2.99</td>
+      <td class="num line">$2.99</td>
+      <td class="sect">School &amp; Office Supplies – Pencils</td>
+    </tr>
+<tr data-line="2.5">
+      <td class="chk"><input type="checkbox" id="i31" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i31">Colored Pencils</label></td>
+      <td class="qty">24-ct × 1 pack</td>
+      <td class="prod">Mondo Llama 24ct Colored Pencils</td>
+      <td class="num">$2.50</td>
+      <td class="num line">$2.50</td>
+      <td class="sect">School &amp; Office Supplies – Art</td>
+    </tr>
+<tr data-line="0.5">
+      <td class="chk"><input type="checkbox" id="i32" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i32">Crayons</label></td>
+      <td class="qty">24-ct × 1 pack</td>
+      <td class="prod">Crayola 24ct Crayons</td>
+      <td class="num">$0.50</td>
+      <td class="num line">$0.50</td>
+      <td class="sect">School &amp; Office Supplies – Crayons</td>
+    </tr>
+<tr data-line="1.98">
+      <td class="chk"><input type="checkbox" id="i33" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i33">Markers</label></td>
+      <td class="qty">10-ct × 2 packs</td>
+      <td class="prod">Crayola 10ct Broad Line Markers</td>
+      <td class="num">$0.99</td>
+      <td class="num line">$1.98</td>
+      <td class="sect">School &amp; Office Supplies – Markers</td>
+    </tr>
+<tr data-line="6.59">
+      <td class="chk"><input type="checkbox" id="i34" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i34">Play-Doh Assorted Colors</label></td>
+      <td class="qty">1 set</td>
+      <td class="prod">Play-Doh Party Bag Multipack, 15pc</td>
+      <td class="num">$6.59</td>
+      <td class="num line">$6.59</td>
+      <td class="sect">Toys – Arts &amp; Crafts</td>
+    </tr>
+<tr data-line="4.78">
+      <td class="chk"><input type="checkbox" id="i35" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i35">Watercolor Paint Set</label></td>
+      <td class="qty">2 packs</td>
+      <td class="prod">Crayola 8ct Washable Watercolors w/ Brush</td>
+      <td class="num">$2.39</td>
+      <td class="num line">$4.78</td>
+      <td class="sect">Arts &amp; Crafts – Kids Paint</td>
+    </tr>
+<tr data-line="19.99">
+      <td class="chk"><input type="checkbox" id="i36" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i36">24-Color Tempera Paint Sticks</label></td>
+      <td class="qty">1 pack</td>
+      <td class="prod">KINGART Tempera Paint Sticks, 24 Colors</td>
+      <td class="num">$19.99</td>
+      <td class="num line">$19.99</td>
+      <td class="sect">Arts &amp; Crafts – Kids Paint</td>
+    </tr>
+<tr data-line="3">
+      <td class="chk"><input type="checkbox" id="i37" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i37">Watercolor Paper Pad, 9"x12"</label></td>
+      <td class="qty">1</td>
+      <td class="prod">Mondo Llama 9"x12" Painting Paper Pad</td>
+      <td class="num">$3.00</td>
+      <td class="num line">$3.00</td>
+      <td class="sect">Arts &amp; Crafts – Paper Pads</td>
+    </tr>
+<tr data-line="1.59">
+      <td class="chk"><input type="checkbox" id="i38" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i38">Blunt Tip Scissors</label></td>
+      <td class="qty">1 pair</td>
+      <td class="prod">Fiskars 5" Blunt Tip Scissors</td>
+      <td class="num">$1.59</td>
+      <td class="num line">$1.59</td>
+      <td class="sect">School &amp; Office Supplies – Cutting</td>
+    </tr>
+<tr data-line="4.49">
+      <td class="chk"><input type="checkbox" id="i39" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i39">Dry Erase Markers</label></td>
+      <td class="qty">4-ct × 1 pack</td>
+      <td class="prod">Expo 4pk Dry Erase Markers, Chisel</td>
+      <td class="num">$4.49</td>
+      <td class="num line">$4.49</td>
+      <td class="sect">School &amp; Office Supplies – Dry Erase</td>
+    </tr>
+<tr data-line="7.99">
+      <td class="chk"><input type="checkbox" id="i40" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i40">Dry Erase Board, 12"x9"</label></td>
+      <td class="qty">1</td>
+      <td class="prod">U Brands 9"x12" Dry Erase Lap Board</td>
+      <td class="num">$7.99</td>
+      <td class="num line">$7.99</td>
+      <td class="sect">School &amp; Office Supplies – Dry Erase</td>
+    </tr>
+<tr data-line="4.39">
+      <td class="chk"><input type="checkbox" id="i41" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i41">Primary Composition Notebook</label></td>
+      <td class="qty">1</td>
+      <td class="prod">Mead Primary Composition Book (K-2)</td>
+      <td class="num">$4.39</td>
+      <td class="num line">$4.39</td>
+      <td class="sect">School &amp; Office Supplies – Notebooks</td>
+    </tr>
+<tr data-line="3.98">
+      <td class="chk"><input type="checkbox" id="i42" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i42">Liquid Glue, Washable, 7.6 oz</label></td>
+      <td class="qty">2-ct</td>
+      <td class="prod">Elmer's 7.625oz Washable School Glue</td>
+      <td class="num">$1.99</td>
+      <td class="num line">$3.98</td>
+      <td class="sect">School &amp; Office Supplies – Adhesives</td>
+    </tr>
+<tr data-line="1">
+      <td class="chk"><input type="checkbox" id="i43" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i43">Glue Stick</label></td>
+      <td class="qty">8-ct</td>
+      <td class="prod">up&amp;up Glue Stick 2ct (buy 4 = 8)</td>
+      <td class="num">$0.25</td>
+      <td class="num line">$1.00</td>
+      <td class="sect">School &amp; Office Supplies – Adhesives</td>
+    </tr>
+<tr data-line="1.99">
+      <td class="chk"><input type="checkbox" id="i44" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i44">Cotton Balls</label></td>
+      <td class="qty">1 pack (small)</td>
+      <td class="prod">up&amp;up Jumbo Cotton Balls, 200ct</td>
+      <td class="num">$1.99</td>
+      <td class="num line">$1.99</td>
+      <td class="sect">Health &amp; Beauty – Cotton</td>
+    </tr>
+<tr data-line="3.75">
+      <td class="chk"><input type="checkbox" id="i45" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i45">Assorted Construction Paper</label></td>
+      <td class="qty">1 pack</td>
+      <td class="prod">Mondo Llama 9"x12" Construction Paper</td>
+      <td class="num">$3.75</td>
+      <td class="num line">$3.75</td>
+      <td class="sect">Arts &amp; Crafts – Craft Paper</td>
+    </tr>
+<tr data-line="0.99">
+      <td class="chk"><input type="checkbox" id="i46" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i46">Pencil Box (VPK)</label></td>
+      <td class="qty">1</td>
+      <td class="prod">Sterilite Flat Top Pencil Box, Clear</td>
+      <td class="num">$0.99</td>
+      <td class="num line">$0.99</td>
+      <td class="sect">School &amp; Office Supplies – Storage</td>
+    </tr>
+<tr data-line="4.99">
+      <td class="chk"><input type="checkbox" id="i47" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i47">White 1.5-inch Binder</label></td>
+      <td class="qty">1</td>
+      <td class="prod">up&amp;up 1.5" Clear View 3-Ring Binder</td>
+      <td class="num">$4.99</td>
+      <td class="num line">$4.99</td>
+      <td class="sect">School &amp; Office Supplies – Binders</td>
+    </tr>
+<tr data-line="5.49">
+      <td class="chk"><input type="checkbox" id="i48" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i48">Page Sheet Protectors</label></td>
+      <td class="qty">50-ct</td>
+      <td class="prod">up&amp;up Letter Sheet Protectors, 50ct<span class="note"> — Est.; 25ct $4.29 / 100ct $9.49</span></td>
+      <td class="num">$5.49</td>
+      <td class="num line">$5.49</td>
+      <td class="sect">School &amp; Office Supplies – Binder Accessories</td>
+    </tr>
+<tr data-line="5.59">
+      <td class="chk"><input type="checkbox" id="i49" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i49">Assorted Cardstock Paper</label></td>
+      <td class="qty">1 pack</td>
+      <td class="prod">Astrobrights 50-Sheet Primary Cardstock</td>
+      <td class="num">$5.59</td>
+      <td class="num line">$5.59</td>
+      <td class="sect">Arts &amp; Crafts – Craft Paper</td>
+    </tr>
+<tr data-line="4.49">
+      <td class="chk"><input type="checkbox" id="i50" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i50">White Cardstock Paper</label></td>
+      <td class="qty">1 pack</td>
+      <td class="prod">Astrodesigns 50-Sheet Bright White Cardstock</td>
+      <td class="num">$4.49</td>
+      <td class="num line">$4.49</td>
+      <td class="sect">Arts &amp; Crafts – Craft Paper</td>
+    </tr>
+<tr data-line="5.79">
+      <td class="chk"><input type="checkbox" id="i51" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i51">Copy / Printer Paper</label></td>
+      <td class="qty">1 pack</td>
+      <td class="prod">up&amp;up 500ct Letter Printer Paper</td>
+      <td class="num">$5.79</td>
+      <td class="num line">$5.79</td>
+      <td class="sect">School &amp; Office Supplies – Printer Paper</td>
+    </tr>
+<tr data-line="2.69">
+      <td class="chk"><input type="checkbox" id="i52" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i52">Coloring Book</label></td>
+      <td class="qty">1</td>
+      <td class="prod">Crayola 96pg Coloring Book</td>
+      <td class="num">$2.69</td>
+      <td class="num line">$2.69</td>
+      <td class="sect">Books / Arts &amp; Crafts – Activity</td>
+    </tr>
+<tr data-line="6.69">
+      <td class="chk"><input type="checkbox" id="i53" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i53">Washable Finger Paint, 8-Color</label></td>
+      <td class="qty">1 set</td>
+      <td class="prod">Crayola Washable Kids' Paint, 10ct<span class="note"> — No 8-color finger set; nearest</span></td>
+      <td class="num">$6.69</td>
+      <td class="num line">$6.69</td>
+      <td class="sect">Arts &amp; Crafts – Kids Paint</td>
+    </tr>
+<tr data-line="5.99">
+      <td class="chk"><input type="checkbox" id="i54" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i54">Sticker Collection Book</label></td>
+      <td class="qty">1</td>
+      <td class="prod">First Sticker Book (Usborne)<span class="note"> — Nearest sticker book</span></td>
+      <td class="num">$5.99</td>
+      <td class="num line">$5.99</td>
+      <td class="sect">Books / Arts &amp; Crafts – Activity</td>
+    </tr>
+<tr data-line="6.5">
+      <td class="chk"><input type="checkbox" id="i55" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i55">Treasure Box Toys</label></td>
+      <td class="qty">1 box</td>
+      <td class="prod">Spritz Party Favor Toys (assorted)<span class="note"> — Small prize-toy assortment</span></td>
+      <td class="num">$6.50</td>
+      <td class="num line">$6.50</td>
+      <td class="sect">Toys / Bullseye's Playground</td>
+    </tr>
+<tr data-line="11.99">
+      <td class="chk"><input type="checkbox" id="i56" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i56">Clear School Backpack</label></td>
+      <td class="qty">1</td>
+      <td class="prod">Locker Club Clear 17" Backpack</td>
+      <td class="num">$11.99</td>
+      <td class="num line">$11.99</td>
+      <td class="sect">Bags &amp; Luggage – Backpacks</td>
+    </tr>
+<tr data-line="5">
+      <td class="chk"><input type="checkbox" id="i57" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i57">Reusable Water Bottle</label></td>
+      <td class="qty">1</td>
+      <td class="prod">All In Motion 16oz Stainless Steel Bottle</td>
+      <td class="num">$5.00</td>
+      <td class="num line">$5.00</td>
+      <td class="sect">Kitchen / Dining – Drinkware</td>
+    </tr>
+<tr data-line="23.99">
+      <td class="chk"><input type="checkbox" id="i58" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i58">Nap Mat with Pillow &amp; Blanket</label></td>
+      <td class="qty">1</td>
+      <td class="prod">Everything Kids Toddler Nap Mat Set</td>
+      <td class="num">$23.99</td>
+      <td class="num line">$23.99</td>
+      <td class="sect">Kids' Bedding / Toddler</td>
+    </tr>
+<tr data-line="4.39">
+      <td class="chk"><input type="checkbox" id="i59" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i59">15-Gallon Storage Bag, 24"x24"</label></td>
+      <td class="qty">2-ct</td>
+      <td class="prod">Hefty Jumbo Slider Storage Bags (12ct pk)<span class="note"> — No exact size; nearest jumbo bag</span></td>
+      <td class="num">$4.39</td>
+      <td class="num line">$4.39</td>
+      <td class="sect">Household Essentials – Storage</td>
+    </tr>
+<tr data-line="1.59">
+      <td class="chk"><input type="checkbox" id="i60" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i60">Facial Tissue Box</label></td>
+      <td class="qty">1 box</td>
+      <td class="prod">up&amp;up Ultra Soft 3-Ply Facial Tissue</td>
+      <td class="num">$1.59</td>
+      <td class="num line">$1.59</td>
+      <td class="sect">Household Essentials – Paper Goods</td>
+    </tr>
+<tr data-line="22.14">
+      <td class="chk"><input type="checkbox" id="i61" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i61">Flushable Wipes</label></td>
+      <td class="qty">6 packs</td>
+      <td class="prod">up&amp;up Flushable Cleansing Wipes<span class="note"> — Entry price/pack</span></td>
+      <td class="num">$3.69</td>
+      <td class="num line">$22.14</td>
+      <td class="sect">Household Essentials – Personal Care</td>
+    </tr>
+<tr data-line="5.98">
+      <td class="chk"><input type="checkbox" id="i62" onchange="onCheck(this)"></td>
+      <td class="item"><label for="i62">Disinfecting Wipes</label></td>
+      <td class="qty">2 packs</td>
+      <td class="prod">up&amp;up Disinfecting Wipes, 75ct</td>
+      <td class="num">$2.99</td>
+      <td class="num line">$5.98</td>
+      <td class="sect">Household Essentials – Cleaning</td>
+    </tr></tbody>
+    </table>
+    </div>
+  </section>
+
+  <div class="grand">
+    <div><div class="lab">Estimated grand total · both lists</div><div class="split">Elementary &amp; Middle $134.31 · Preschool &amp; VPK $195.80 · before FL sales tax</div></div>
+    <div class="big">$330.11</div>
+  </div>
+
+  <div class="foot">
+    <h3>Notes &amp; substitutions</h3>
+    <ul>
+      <li><b>Glue sticks:</b> the list asks for 8; the cheapest route is the up&amp;up 2-count at $0.25 — buy four. Elmer’s sells a 6-pack ($2.99) for name-brand.</li>
+      <li><b>Highlighters:</b> no 2-count assorted pack exists; the smallest is the up&amp;up 4-pack ($1.99).</li>
+      <li><b>Pink erasers:</b> sold in 3-counts (Paper Mate Pink Pearl, $1.49); grab two to exceed four.</li>
+      <li><b>24-color tempera paint sticks:</b> the only true 24-color set is KINGART ($19.99); Mondo Llama tops out at 18 colors ($10).</li>
+      <li><b>Washable finger paint (8-color):</b> not stocked in that form; Crayola 10-count Washable Kids’ Paint ($6.69) is the nearest.</li>
+      <li><b>15-gallon 24"×24" bags:</b> not carried in that size; Hefty Jumbo storage bags ($4.39/pk) are closest, or check Ziploc Big Bags XL.</li>
+      <li><b>Store brands:</b> many staples are cheapest as up&amp;up / Mondo Llama / Dealworthy; swap to Crayola or Elmer’s if a teacher requires name brands.</li>
+    </ul>
+    <div class="fine">Totals assume one of each item at the quantities the school listed and exclude Florida sales tax. Prices are point-in-time and may change.</div>
+  </div>
+</div>
+
+<script>
+  var GRAND = 330.11;
+  function fmt(n){return '$'+n.toFixed(2);}
+  function onCheck(cb){ cb.closest('tr').classList.toggle('done', cb.checked); recompute(); }
+  function recompute(){
+    var collected=0, count=0, total=0;
+    document.querySelectorAll('tbody tr').forEach(function(tr){
+      total++;
+      var line=parseFloat(tr.getAttribute('data-line'))||0;
+      if(tr.querySelector('input').checked){collected+=line;count++;}
+    });
+    document.getElementById('sCollected').textContent=fmt(collected);
+    document.getElementById('sRemaining').textContent=fmt(Math.max(0,GRAND-collected));
+    document.getElementById('sItems').textContent=count+' / '+total;
+    document.getElementById('sBar').style.width=(total?(count/total*100):0)+'%';
+    document.querySelectorAll('.listcard').forEach(function(card){
+      var trs=card.querySelectorAll('tbody tr'), done=0;
+      trs.forEach(function(t){if(t.querySelector('input').checked)done++;});
+      var cnt=card.querySelector('.cnt');
+      cnt.textContent=done+' / '+trs.length+' collected';
+    });
+  }
+  function resetAll(){ document.querySelectorAll('tbody input').forEach(function(c){c.checked=false;c.closest('tr').classList.remove('done');}); recompute(); }
+  recompute();
+</script>
+</body>
+</html>
