@@ -39,6 +39,17 @@
     padding:8px 12px;border-radius:9px;cursor:pointer;transition:.15s}
   button:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
 
+  /* view toggle (group by location) */
+  .viewtoggle{display:flex;align-items:center;gap:8px}
+  .viewtoggle input{position:absolute;opacity:0;width:0;height:0}
+  .viewtoggle .track{width:40px;height:22px;background:#cdd5e3;border-radius:20px;position:relative;transition:.2s;flex:none}
+  .viewtoggle .thumb{position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+  .viewtoggle input:checked + .track{background:var(--vpk)}
+  .viewtoggle input:checked + .track .thumb{transform:translateX(18px)}
+  .viewtoggle input:focus-visible + .track{outline:2px solid var(--navy);outline-offset:2px}
+  .viewtoggle .tlab{font-size:13px;font-weight:600;color:var(--navy);white-space:nowrap;cursor:pointer}
+  .lhead.loc{background:linear-gradient(120deg,var(--navy),var(--vpk))}
+
   .listcard{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:26px;box-shadow:0 1px 3px rgba(20,30,60,.04)}
   .lhead{padding:14px 18px;color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
   .lhead.elem{background:linear-gradient(120deg,var(--elem),#33528a)}
@@ -105,8 +116,11 @@
     <div class="stat"><span class="k">Remaining</span><span class="v acc" id="sRemaining">$330.11</span></div>
     <div class="stat"><span class="k">Items</span><span class="v" id="sItems">0 / 63</span></div>
     <div class="bar"><i id="sBar"></i></div>
+    <label class="viewtoggle"><input type="checkbox" id="grpToggle" onchange="setView(this.checked)"><span class="track"><span class="thumb"></span></span><span class="tlab">Group by location</span></label>
     <div class="btns"><button onclick="window.print()">Print</button><button onclick="resetAll()">Reset</button></div>
   </div>
+
+  <div id="viewByList">
 
   <section class="listcard">
     <div class="lhead elem">
@@ -697,6 +711,9 @@
     </table>
     </div>
   </section>
+  </div>
+
+  <div id="viewByLocation" hidden></div>
 
   <div class="grand">
     <div><div class="lab">Estimated grand total · both lists</div><div class="split">Elementary &amp; Middle $134.31 · Preschool &amp; VPK $195.80 · before FL sales tax</div></div>
@@ -721,6 +738,7 @@
 <script>
   var GRAND = 330.11;
   var STORE_KEY = 'sssa-supply-checklist-v1';
+  var VIEW_KEY = 'sssa-supply-view-v1';
   function fmt(n){return '$'+n.toFixed(2);}
   function saveState(){
     try{
@@ -758,8 +776,71 @@
     });
   }
   function resetAll(){ document.querySelectorAll('tbody input').forEach(function(c){c.checked=false;c.closest('tr').classList.remove('done');}); saveState(); recompute(); }
+
+  /* ---- Group-by-location view ---------------------------------------
+     The same <tr> nodes are physically moved between the default
+     by-list view and a by-location view, so checkbox ids, saved state,
+     and recompute() all keep working against a single source of truth. */
+  function itemName(tr){ var l=tr.querySelector('.item label'); return l?l.textContent.trim():''; }
+  function locName(tr){
+    var s=tr.querySelector('.sect'), t=s?s.textContent.trim():'Other';
+    var dash=t.indexOf('–');           // split on en dash → store department
+    if(dash>-1) t=t.slice(0,dash).trim();
+    return t||'Other';
+  }
+  function buildLocationView(){
+    var vLoc=document.getElementById('viewByLocation');
+    vLoc.innerHTML='';
+    var groups={};
+    document.querySelectorAll('#viewByList tbody tr').forEach(function(tr){
+      var k=locName(tr); (groups[k]=groups[k]||[]).push(tr);
+    });
+    Object.keys(groups).sort(function(a,b){return a.localeCompare(b);}).forEach(function(k){
+      var items=groups[k].sort(function(a,b){return itemName(a).localeCompare(itemName(b));});
+      var sub=0; items.forEach(function(t){sub+=parseFloat(t.getAttribute('data-line'))||0;});
+      var card=document.createElement('section');
+      card.className='listcard';
+      card.innerHTML=
+        '<div class="lhead loc"><h2></h2>'+
+        '<div class="lmeta"><span class="cnt" data-total="'+items.length+'">0 / '+items.length+' collected</span>'+
+        '<span class="lsub"></span></div></div>'+
+        '<div class="tablewrap"><table>'+
+        '<thead><tr><th class="chk"></th><th>Item</th><th>Qty</th><th>Suggested Target product</th><th class="num">Unit</th><th class="num">Line</th><th>Store section</th></tr></thead>'+
+        '<tbody></tbody></table></div>';
+      card.querySelector('h2').textContent=k;
+      card.querySelector('.lsub').textContent='Subtotal '+fmt(sub);
+      var tb=card.querySelector('tbody');
+      items.forEach(function(t){ tb.appendChild(t); });   // moves the node
+      vLoc.appendChild(card);
+    });
+  }
+  function restoreListView(){
+    var homes=document.querySelectorAll('#viewByList .listcard tbody');
+    var rows=Array.prototype.slice.call(document.querySelectorAll('#viewByLocation tbody tr'));
+    rows.sort(function(a,b){return (+a.dataset.ord)-(+b.dataset.ord);});
+    rows.forEach(function(tr){ homes[+tr.dataset.home].appendChild(tr); });
+    document.getElementById('viewByLocation').innerHTML='';
+  }
+  function setView(byLoc){
+    var vList=document.getElementById('viewByList'), vLoc=document.getElementById('viewByLocation');
+    if(byLoc){ buildLocationView(); vList.hidden=true; vLoc.hidden=false; }
+    else     { restoreListView();  vLoc.hidden=true;  vList.hidden=false; }
+    try{ localStorage.setItem(VIEW_KEY, byLoc?'loc':'list'); }catch(e){}
+    recompute();
+  }
+
+  // Tag every row with its home tbody + original order so the by-list view can be rebuilt.
+  (function(){
+    var ord=0;
+    document.querySelectorAll('#viewByList .listcard tbody').forEach(function(tb,i){
+      Array.prototype.forEach.call(tb.children,function(tr){ tr.dataset.home=i; tr.dataset.ord=ord++; });
+    });
+  })();
+
   loadState();
-  recompute();
+  var savedView; try{ savedView=localStorage.getItem(VIEW_KEY); }catch(e){ savedView=null; }
+  if(savedView==='loc'){ document.getElementById('grpToggle').checked=true; setView(true); }
+  else { recompute(); }
 </script>
 </body>
 </html>
